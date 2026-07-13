@@ -1,0 +1,38 @@
+# Ambiente local
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Secrets e config local
+.env
+kaggle.json
+
+# Dados e artefatos (montados via volumes)
+dataset/
+diagramas_selecionados/
+relatorio/
+minha-seleção-diagramas/
+
+# Git e IDE
+.git/
+.github/
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Build e docs
+dist/
+build/
+*.egg-info/
+docs/
+*.ipynb
+PROMPT_*.txt

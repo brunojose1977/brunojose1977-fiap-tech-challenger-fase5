@@ -1,0 +1,8 @@
+Como especialista em projetos Python e Google Colab, você precisa pegar o notebook prototipo_carga_de_diagramas_do_dataset_do_Kaggle_e_análise_STRIDE_v6.ipynb e transformar em projeto Python seguindo as melhores praticas de desenvolvimento e engenharia de software como a Twelve-Factor App.
+
+- Crie esteira CI/CD 
+- Crie testes automatizados
+- Baixe o arquivo do DATASET para um pasta local do projeto (caso não exista)
+- As pastas devem ser locais, como /diagramas_selecionado, /relatorio, /dataset
+
+Ao final crie um roteiro como o passo a passo para testar e executar o projeto

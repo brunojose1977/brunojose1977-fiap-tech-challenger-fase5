@@ -1,0 +1,111 @@
+name: stride-analyzer
+
+# ---------------------------------------------------------------------------
+# Arquitetura modular (Twelve-Factor + microserviços batch)
+#
+#   setup → download → filter → analyze
+#
+# Cada etapa roda em um contêiner isolado, compartilhando volumes de dados.
+# ---------------------------------------------------------------------------
+
+x-app-volumes: &app-volumes
+  - ./dataset:/app/dataset
+  - ./diagramas_selecionados:/app/diagramas_selecionados
+  - ./relatorio:/app/relatorio
+  - hf-cache:/app/.cache/huggingface
+
+x-app-environment: &app-environment
+  PROJECT_ROOT: /app
+  HF_HOME: /app/.cache/huggingface
+  TRANSFORMERS_CACHE: /app/.cache/huggingface
+
+x-app-base: &app-base
+  build:
+    context: .
+    dockerfile: Dockerfile
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    <<: *app-environment
+  volumes: *app-volumes
+  restart: "no"
+
+services:
+  # -------------------------------------------------------------------------
+  # Etapa 0 — inicialização de diretórios e verificação de volumes
+  # -------------------------------------------------------------------------
+  setup:
+    <<: *app-base
+    container_name: stride-setup
+    command: ["setup"]
+    profiles: [modular]
+
+  # -------------------------------------------------------------------------
+  # Etapa 1 — download do dataset Kaggle (I/O, rede)
+  # -------------------------------------------------------------------------
+  download:
+    <<: *app-base
+    container_name: stride-download
+    command: ["download"]
+    profiles: [modular]
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+
+  # -------------------------------------------------------------------------
+  # Etapa 2 — filtragem com OpenCV + CLIP (CPU/memória intensivo)
+  # -------------------------------------------------------------------------
+  filter:
+    <<: *app-base
+    container_name: stride-filter
+    command: ["filter"]
+    profiles: [modular]
+    depends_on:
+      download:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  # -------------------------------------------------------------------------
+  # Etapa 3 — análise STRIDE via OpenAI + geração de relatórios
+  # -------------------------------------------------------------------------
+  analyze:
+    <<: *app-base
+    container_name: stride-analyze
+    command: ["analyze"]
+    profiles: [modular]
+    depends_on:
+      filter:
+        condition: service_completed_successfully
+
+  # -------------------------------------------------------------------------
+  # Encerramento do pipeline modular (confirma sucesso da cadeia)
+  # -------------------------------------------------------------------------
+  pipeline-modular:
+    image: alpine:3.20
+    container_name: stride-pipeline-modular
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - echo "Pipeline modular concluído com sucesso."
+    profiles: [modular]
+    restart: "no"
+    depends_on:
+      analyze:
+        condition: service_completed_successfully
+
+  # -------------------------------------------------------------------------
+  # Pipeline monolítico — download + filter + analyze em um único contêiner
+  # Uso: docker compose --profile monolith run --rm pipeline
+  # -------------------------------------------------------------------------
+  pipeline:
+    <<: *app-base
+    container_name: stride-pipeline
+    command: ["run-all"]
+    profiles: [monolith]
+
+volumes:
+  hf-cache:
+    name: stride-hf-cache
