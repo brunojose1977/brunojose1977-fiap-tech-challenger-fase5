@@ -2,23 +2,55 @@
 
 Projeto Python derivado do notebook Colab **prototipo_carga_de_diagramas_do_dataset_do_Kaggle_e_análise_STRIDE_v6**. Baixa diagramas de arquitetura do Kaggle, filtra por qualidade e executa análise de segurança **STRIDE** com exportação em JSON, PDF e DOCX.
 
+Documentação completa (arquitetura + roteiro): [`docs/Documentação.pdf`](docs/Documentação.pdf)
+
+Infográfico dos contêineres Docker: [`docs/infrografico_arquitetura_docker.png`](docs/infrografico_arquitetura_docker.png) · [`docs/infrografico_arquitetura_docker.pdf`](docs/infrografico_arquitetura_docker.pdf)
+
+Infográfico dos módulos Python: [`docs/infrografico_python.png`](docs/infrografico_python.png) · [`docs/infrografico_python.pdf`](docs/infrografico_python.pdf)
+
+Infográfico de integrações (Kaggle / OpenAI / Docker): [`docs/infrografico_diagrama_integração.png`](docs/infrografico_diagrama_integração.png) · [`docs/infrografico_diagrama_integração.pdf`](docs/infrografico_diagrama_integração.pdf)
+
 ## Estrutura do projeto
 
 ```
-Projeto Python com Docker/
+brunojose1977-fiap-tech-challenger-fase5/
 ├── dataset/                  # Dataset Kaggle (download local)
-├── diagramas_selecionados/    # Diagramas aprovados pela filtragem
+├── diagramas_selecionados/   # Diagramas aprovados pela filtragem
 ├── relatorio/                # JSON, PDF e DOCX gerados
-├── docker/                   # Entrypoint e scripts de contêiner
+├── docker/                   # Entrypoint do contêiner
+├── docs/                     # Documentação e evidências
+│   ├── Documentação.pdf      # Arquitetura e roteiro completo
+│   ├── infrografico_arquitetura_docker.*  # Diagrama dos contêineres
+│   ├── infrografico_python.* # Diagrama dos módulos Python
+│   └── infrografico_diagrama_integração.* # Integrações externas
 ├── src/stride_analyzer/      # Código-fonte modular
 ├── tests/                    # Testes automatizados (pytest)
-├── .github/workflows/ci.yml  # Pipeline CI/CD
 ├── Dockerfile                # Imagem da aplicação
 ├── docker-compose.yml        # Orquestração modular do pipeline
 ├── pyproject.toml
 ├── .env.example
 └── README.md
 ```
+
+## Arquitetura (resumo)
+
+CLI stateless (`stride-analyzer`) com pipeline em quatro etapas:
+
+```
+setup → download (Kaggle) → filter (OpenCV + CLIP) → analyze (GPT-4o Vision) → relatórios
+```
+
+| Módulo | Responsabilidade |
+|--------|------------------|
+| `cli.py` | Comandos e logging |
+| `config.py` | Settings via variáveis de ambiente |
+| `dataset.py` | Download/extração do dataset Kaggle |
+| `image_analysis.py` | Nitidez, alinhamento e CLIP |
+| `filter.py` | Seleção e cópia dos diagramas |
+| `stride.py` | Análise STRIDE via OpenAI Vision |
+| `reports.py` | Exportação JSON / PDF / DOCX |
+
+Diagrama visual dos módulos: [`docs/infrografico_python.png`](docs/infrografico_python.png)
 
 ## Princípios Twelve-Factor aplicados
 
@@ -28,11 +60,11 @@ Projeto Python com Docker/
 | **II. Dependencies** | `pyproject.toml` com dependências explícitas |
 | **III. Config** | Variáveis de ambiente via `.env` (nunca commitadas) |
 | **IV. Backing services** | Kaggle e OpenAI como recursos anexáveis |
-| **V. Build, release, run** | CI separa lint, testes e build do pacote |
+| **V. Build, release, run** | Build da imagem Docker separado da execução |
 | **VI. Processes** | CLI stateless (`stride-analyzer`) |
-| **VII–VIII. Concurrency** | Processos independentes por comando |
+| **VII–VIII. Concurrency** | Processos/contêineres independentes por comando |
 | **IX. Disposability** | Comandos iniciam e encerram rapidamente |
-| **X. Dev/prod parity** | Mesma CLI e config em dev e produção |
+| **X. Dev/prod parity** | Mesma CLI e config em local e Docker |
 | **XI. Logs** | Saída estruturada em stdout |
 | **XII. Admin processes** | Comandos `setup`, `download`, `filter`, `analyze` |
 
@@ -41,6 +73,8 @@ Projeto Python com Docker/
 ## Arquitetura Docker
 
 O pipeline foi containerizado com **Docker Compose**, separando cada etapa em um contêiner independente que compartilha volumes de dados.
+
+Diagrama visual: [`docs/infrografico_arquitetura_docker.png`](docs/infrografico_arquitetura_docker.png)
 
 ```mermaid
 flowchart LR
@@ -90,12 +124,6 @@ Cada etapa em um contêiner, encadeada por `depends_on`:
 docker compose --profile modular up --abort-on-container-exit
 ```
 
-Ou via script:
-
-```powershell
-.\scripts\docker-pipeline.ps1 modular
-```
-
 ### Pipeline monolítico (um contêiner)
 
 Equivalente a `stride-analyzer run-all`:
@@ -134,7 +162,7 @@ docker compose --profile modular run --rm analyze
 ### 1. Clonar ou acessar o projeto
 
 ```powershell
-cd "c:\Users\bruno.silva\Downloads\TechChallenger Fase 5\Projeto Python com Docker"
+cd caminho\para\brunojose1977-fiap-tech-challenger-fase5
 ```
 
 ### 2. Criar ambiente virtual
@@ -211,6 +239,8 @@ stride-analyzer analyze
   - `relatorio_stride_YYYYMMDD_HHMMSS.pdf`
   - `relatorio_stride_YYYYMMDD_HHMMSS.docx`
 
+> Alternativa sem download: copie PNGs (por exemplo de `minha-seleção-diagramas/`) para `diagramas_selecionados/` e execute apenas `analyze`.
+
 ### 9. Executar pipeline completo (atalho)
 
 ```powershell
@@ -236,14 +266,6 @@ pytest --cov=stride_analyzer --cov-report=term-missing
 ```powershell
 ruff check src tests
 ```
-
-### 12. CI/CD (GitHub Actions)
-
-O workflow em `.github/workflows/ci.yml` executa automaticamente em push/PR:
-
-1. **Lint** com ruff
-2. **Testes** com pytest (Python 3.10, 3.11, 3.12)
-3. **Build** do pacote Python
 
 ---
 

@@ -1,0 +1,19 @@
+
+
+
+# moda de forma monolito todos os processos
+docker compose --profile monolith run --rm pipeline
+
+# roda localmente todos os processos
+stride-analyzer run-all
+
+#testes
+pytest
+pytest --cov=stride_analyzer --cov-report=term-missing
+ruff check src tests
+
+#Execução de processos separadamente por módulos Docker
+
+docker compose --profile modular run --rm download
+docker compose --profile modular run --rm filter
+docker compose --profile modular run --rm analyze
