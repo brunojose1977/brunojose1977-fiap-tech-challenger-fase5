@@ -23,9 +23,9 @@ dataset/**
 !dataset/.gitkeep
 
 # Dados locais / artefatos gerados
-diagramas_selecionados/*
+#diagramas_selecionados/*
 !diagramas_selecionados/.gitkeep
-relatorio/*
+#relatorio/*
 !relatorio/.gitkeep
 
 # IDE e SO
